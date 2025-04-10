@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Downloader</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-xl mx-auto mt-20 p-6 bg-white shadow rounded">
+    <h1 class="text-2xl font-bold mb-4">YouTube Downloader</h1>
+    <form id="fetchForm">
+      <input type="text" id="url" placeholder="Enter YouTube video URL" class="w-full p-2 border rounded mb-4" required />
+      <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Fetch Video</button>
+    </form>
+
+    <div id="videoDetails" class="hidden mt-6">
+      <img id="thumbnail" class="w-full rounded mb-2" />
+      <h2 id="videoTitle" class="text-lg font-semibold mb-4"></h2>
+
+      <select id="format" class="w-full p-2 border rounded mb-2">
+        <option value="video">Video (mp4)</option>
+        <option value="audio">Audio (mp3)</option>
+      </select>
+
+      <select id="quality" class="w-full p-2 border rounded mb-4"></select>
+
+      <a id="downloadBtn" class="block bg-green-600 text-white text-center p-2 rounded hover:bg-green-700" download>Download</a>
+    </div>
+  </div>
+
+  <script>
+    const fetchForm = document.getElementById('fetchForm');
+    const urlInput = document.getElementById('url');
+    const videoDetails = document.getElementById('videoDetails');
+    const videoTitle = document.getElementById('videoTitle');
+    const thumbnail = document.getElementById('thumbnail');
+    const qualitySelect = document.getElementById('quality');
+    const formatSelect = document.getElementById('format');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    fetchForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const url = urlInput.value;
+
+      const res = await fetch(`/api/info?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+
+      videoTitle.textContent = data.title;
+      thumbnail.src = data.thumbnail;
+
+      qualitySelect.innerHTML = '';
+      data.qualities.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.itag;
+        opt.textContent = `${q.qualityLabel} (${q.container})`;
+        qualitySelect.appendChild(opt);
+      });
+
+      downloadBtn.href = `/api/download?url=${encodeURIComponent(url)}&itag=${qualitySelect.value}&format=video`;
+      downloadBtn.textContent = "Download Video";
+      videoDetails.classList.remove('hidden');
+    };
+
+    formatSelect.onchange = () => {
+      const url = urlInput.value;
+      const itag = qualitySelect.value;
+      const format = formatSelect.value;
+
+      if (format === 'audio') {
+        downloadBtn.href = `/api/download?url=${encodeURIComponent(url)}&format=audio`;
+        downloadBtn.textContent = "Download MP3";
+        qualitySelect.disabled = true;
+      } else {
+        downloadBtn.href = `/api/download?url=${encodeURIComponent(url)}&itag=${itag}&format=video`;
+        downloadBtn.textContent = "Download Video";
+        qualitySelect.disabled = false;
+      }
+    };
+
+    qualitySelect.onchange = () => {
+      const url = urlInput.value;
+      const itag = qualitySelect.value;
+      downloadBtn.href = `/api/download?url=${encodeURIComponent(url)}&itag=${itag}&format=video`;
+    };
+  </script>
+</body>
+</html>
